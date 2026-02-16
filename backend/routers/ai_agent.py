@@ -52,6 +52,46 @@ async def create_ai_agent_call(
     return db_call
 
 
+@router.get("/vapi/{vapi_call_id}/status", response_model=CallTaskResponse)
+def get_call_status_by_vapi(vapi_call_id: str, db: Session = Depends(get_db)):
+    call = db.query(CallTaskDB).filter(CallTaskDB.vapi_call_id == vapi_call_id).first()
+    if not call:
+        raise HTTPException(status_code=404, detail="Call not found")
+    return call
+
+
+@router.post("/vapi/{vapi_call_id}/refresh", response_model=CallTaskResponse)
+async def refresh_call_by_vapi(vapi_call_id: str, db: Session = Depends(get_db)):
+    call = db.query(CallTaskDB).filter(CallTaskDB.vapi_call_id == vapi_call_id).first()
+    if not call:
+        raise HTTPException(status_code=404, detail="Call not found")
+
+    try:
+        vapi_data = await get_vapi_call(call.vapi_call_id)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Vapi API error: {str(e)}")
+
+    vapi_status = vapi_data.get("status", "")
+    if vapi_status == "ended":
+        analysis = vapi_data.get("analysis", {})
+        structured = analysis.get("structuredData", {})
+        call.transcript = vapi_data.get("transcript", "")
+        call.ai_summary = analysis.get("summary", "")
+        call.booking_confirmed = structured.get("booking_confirmed", False)
+        call.ended_reason = vapi_data.get("endedReason", "")
+        call.status = (
+            CallStatus.COMPLETED.value
+            if call.booking_confirmed
+            else CallStatus.FAILED.value
+        )
+    elif vapi_status in ("queued", "ringing", "in-progress"):
+        call.status = CallStatus.IN_PROGRESS.value
+
+    db.commit()
+    db.refresh(call)
+    return call
+
+
 @router.get("/{call_id}/status", response_model=CallTaskResponse)
 def get_call_status(call_id: int, db: Session = Depends(get_db)):
     call = db.query(CallTaskDB).filter(CallTaskDB.id == call_id).first()

@@ -6,13 +6,21 @@ VAPI_BASE_URL = "https://api.vapi.ai"
 
 def build_system_prompt(date: str, time: str, players: int, player_name: str) -> str:
     return (
-        f"You are a polite phone assistant calling Stanford Golf Course to book a tee time.\n"
-        f"Book: {date} at {time} for {players} player{'s' if players != 1 else ''} under the name {player_name}.\n"
-        f"- If the exact time is unavailable, accept the closest available time\n"
-        f"- Confirm the details back including any confirmation number\n"
-        f"- If you reach voicemail, leave a message with the booking request and hang up\n"
-        f"- Never agree to charges beyond the standard tee time fee\n"
-        f"- Be concise and professional"
+        f"You are calling on behalf of Shane to book a tee time at Stanford Golf Course. "
+        f"Be polite, friendly, and brief — like a real person making a quick phone call.\n\n"
+        f"BOOKING REQUEST:\n"
+        f"- Date: {date}\n"
+        f"- Preferred time: {time}\n"
+        f"- Players: {players}\n"
+        f"- Name: {player_name}\n\n"
+        f"INSTRUCTIONS:\n"
+        f"1. Request the tee time above. If that exact time is not available, ask what the closest available time is and accept it.\n"
+        f"2. Ask them to send an email confirmation to Shane.\n"
+        f"3. Once they confirm the email will be sent, thank them and end the call immediately. Do not repeat or re-confirm the booking details.\n"
+        f"4. If they ask for an email address, provide it only if Shane has given one — otherwise say Shane will call back with it.\n"
+        f"5. If you reach voicemail, leave a brief message with the booking request and ask them to call back.\n"
+        f"6. Do not agree to any charges beyond the standard greens fee.\n\n"
+        f"Keep your responses short — one or two sentences at a time. Do not over-explain or ramble."
     )
 
 
@@ -38,11 +46,11 @@ async def create_vapi_outbound_call(
                 "voiceId": "ec126bc2-46e0-4c66-a730-2889cc6cad8d",
             },
             "firstMessage": (
-                f"Hi, I'd like to book a tee time for {players} "
-                f"player{'s' if players != 1 else ''} on {date} at {time}, please. "
-                f"The reservation would be under the name {player_name}."
+                f"Hi there, I'm calling on behalf of Shane to book a tee time. "
+                f"We're looking for {date} around {time} for {players} "
+                f"player{'s' if players != 1 else ''}. Is that available?"
             ),
-            "endCallMessage": "Thank you, goodbye!",
+            "endCallMessage": "Perfect, thank you so much. Have a great day!",
             "analysisPlan": {
                 "structuredDataPrompt": (
                     "Extract the following from the call:\n"

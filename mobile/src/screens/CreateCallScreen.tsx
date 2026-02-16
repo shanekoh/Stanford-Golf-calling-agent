@@ -22,7 +22,7 @@ import ContactPicker from '../components/ContactPicker';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateCall'>;
 
-const STANFORD_GOLF_NUMBER = '+14254658948';
+const STANFORD_GOLF_NUMBER = '+1XXXXXXXXXX';
 const PLAYER_OPTIONS = [
   {value: '1', label: '1'},
   {value: '2', label: '2'},

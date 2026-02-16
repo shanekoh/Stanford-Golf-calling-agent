@@ -1,9 +1,7 @@
 // FastAPI backend client
 // For physical device: use your computer's LAN IP (e.g., 192.168.1.x:8000)
 // For Android emulator: use 10.0.2.2:8000
-// Use LAN IP so physical devices work without adb reverse
-// For emulator: use http://10.0.2.2:8000
-const BASE_URL = 'http://10.29.134.150:8000';
+const BASE_URL = 'http://10.0.2.2:8000';
 
 export interface ApiCallTask {
   id?: number;
@@ -84,12 +82,37 @@ export async function pollCallStatus(
   return response.json();
 }
 
+export async function pollCallStatusByVapi(
+  vapiCallId: string,
+): Promise<AIAgentCallResponse> {
+  const response = await fetch(
+    `${BASE_URL}/calls/vapi/${encodeURIComponent(vapiCallId)}/status`,
+  );
+  if (!response.ok) {
+    throw new Error(`Server error ${response.status}`);
+  }
+  return response.json();
+}
+
 export async function refreshCallFromVapi(
   callId: number,
 ): Promise<AIAgentCallResponse> {
   const response = await fetch(`${BASE_URL}/calls/${callId}/refresh`, {
     method: 'POST',
   });
+  if (!response.ok) {
+    throw new Error(`Server error ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function refreshCallByVapi(
+  vapiCallId: string,
+): Promise<AIAgentCallResponse> {
+  const response = await fetch(
+    `${BASE_URL}/calls/vapi/${encodeURIComponent(vapiCallId)}/refresh`,
+    {method: 'POST'},
+  );
   if (!response.ok) {
     throw new Error(`Server error ${response.status}`);
   }

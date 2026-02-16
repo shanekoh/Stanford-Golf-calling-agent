@@ -18,21 +18,25 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Dashboard'>;
 
 export default function DashboardScreen({navigation}: Props) {
   const [error, setError] = useState<string | null>(null);
-  const {calls, loading, loadCalls, updateStatus, removeCall} = useCallStore();
+  const {calls, loading, loadCalls, syncInProgressCalls, updateStatus, removeCall} = useCallStore();
 
   useEffect(() => {
-    loadCalls().catch(e => {
-      console.error('Failed to load calls:', e);
-      setError(String(e));
-    });
+    loadCalls()
+      .then(() => syncInProgressCalls())
+      .catch(e => {
+        console.error('Failed to load calls:', e);
+        setError(String(e));
+      });
   }, []);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      loadCalls().catch(e => console.error('Failed to load calls:', e));
+      loadCalls()
+        .then(() => syncInProgressCalls())
+        .catch(e => console.error('Failed to load calls:', e));
     });
     return unsubscribe;
-  }, [navigation, loadCalls]);
+  }, [navigation, loadCalls, syncInProgressCalls]);
 
   const sections = useMemo(() => {
     const active = calls.filter(
@@ -121,7 +125,7 @@ export default function DashboardScreen({navigation}: Props) {
             <RNText style={styles.sectionHeader}>{title}</RNText>
           )}
           refreshControl={
-            <RefreshControl refreshing={loading} onRefresh={loadCalls} />
+            <RefreshControl refreshing={loading} onRefresh={() => loadCalls().then(() => syncInProgressCalls())} />
           }
           contentContainerStyle={styles.list}
           ItemSeparatorComponent={() => <View style={{height: 2}} />}

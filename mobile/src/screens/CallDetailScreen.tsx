@@ -7,7 +7,7 @@ import {getCallById} from '../db/database';
 import {useCallStore} from '../store/callStore';
 import {initiateCall, cancelScheduledNotification} from '../services/scheduler';
 import {requestCallPermission} from '../utils/permissions';
-import {pollCallStatus, refreshCallFromVapi} from '../services/api';
+import {pollCallStatusByVapi, refreshCallByVapi} from '../services/api';
 import StatusBadge from '../components/StatusBadge';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CallDetail'>;
@@ -41,18 +41,41 @@ export default function CallDetailScreen({route, navigation}: Props) {
     loadCall();
   }, [loadCall]);
 
+  // Auto-fetch transcript for completed/failed AI calls that don't have it yet
+  useEffect(() => {
+    if (!call) return;
+    if (call.callType !== CallType.AI_AGENT) return;
+    if (call.status !== CallStatus.COMPLETED && call.status !== CallStatus.FAILED) return;
+    if (call.transcript || call.aiSummary) return;
+    if (!call.vapiCallId) return;
+
+    const fetchTranscript = async () => {
+      try {
+        await refreshCallByVapi(call.vapiCallId!);
+        await updateAICallResult(call.id, call.vapiCallId!);
+        await loadCall();
+      } catch {
+        // Will show Fetch Transcript button as fallback
+      }
+    };
+    fetchTranscript();
+  }, [call?.id, call?.status, call?.callType, call?.transcript, call?.aiSummary, call?.vapiCallId, loadCall, updateAICallResult]);
+
   // Poll for AI call status updates
   useEffect(() => {
     if (!call) return;
     if (call.callType !== CallType.AI_AGENT) return;
     if (call.status !== CallStatus.IN_PROGRESS) return;
+    if (!call.vapiCallId) return;
+
+    const vapiId = call.vapiCallId;
 
     pollingRef.current = setInterval(async () => {
       try {
-        const result = await pollCallStatus(callId);
+        const result = await pollCallStatusByVapi(vapiId);
         const status = result.status as CallStatus;
         if (status === CallStatus.COMPLETED || status === CallStatus.FAILED) {
-          await updateAICallResult(callId);
+          await updateAICallResult(callId, vapiId);
           await loadCall();
           if (pollingRef.current) {
             clearInterval(pollingRef.current);
@@ -70,7 +93,7 @@ export default function CallDetailScreen({route, navigation}: Props) {
         pollingRef.current = null;
       }
     };
-  }, [call?.status, call?.callType, callId, loadCall, updateAICallResult]);
+  }, [call?.status, call?.callType, call?.vapiCallId, callId, loadCall, updateAICallResult]);
 
   if (!call) {
     return (
@@ -117,9 +140,13 @@ export default function CallDetailScreen({route, navigation}: Props) {
   };
 
   const handleRefresh = async () => {
+    if (!call?.vapiCallId) {
+      Alert.alert('Error', 'No Vapi call ID available.');
+      return;
+    }
     try {
-      await refreshCallFromVapi(callId);
-      await updateAICallResult(callId);
+      await refreshCallByVapi(call.vapiCallId);
+      await updateAICallResult(callId, call.vapiCallId);
       await loadCall();
     } catch {
       Alert.alert('Error', 'Could not refresh call status from Vapi.');
@@ -272,14 +299,14 @@ export default function CallDetailScreen({route, navigation}: Props) {
             Cancel Scheduled Call
           </Button>
         )}
-        {isAI && isInProgress && (
+        {isAI && (isInProgress || (isDone && !call.transcript)) && (
           <Button
             mode="outlined"
             icon="refresh"
             onPress={handleRefresh}
             textColor="#E65100"
             style={styles.actionButton}>
-            Refresh Status
+            {isInProgress ? 'Refresh Status' : 'Fetch Transcript'}
           </Button>
         )}
         <Button

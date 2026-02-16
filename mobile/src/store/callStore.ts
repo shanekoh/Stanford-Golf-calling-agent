@@ -1,12 +1,13 @@
 import {create} from 'zustand';
-import {CallTask, CallStatus} from '../types';
+import {CallTask, CallStatus, CallType} from '../types';
 import * as db from '../db/database';
-import {createAIAgentCall, pollCallStatus as apiPollStatus} from '../services/api';
+import {createAIAgentCall, pollCallStatusByVapi, refreshCallByVapi} from '../services/api';
 
 interface CallStore {
   calls: CallTask[];
   loading: boolean;
   loadCalls: () => Promise<void>;
+  syncInProgressCalls: () => Promise<void>;
   addCall: (
     phoneNumber: string,
     contactName: string | null,
@@ -28,7 +29,7 @@ interface CallStore {
     playerName: string,
     scheduledTime: number,
   ) => Promise<number>;
-  updateAICallResult: (callId: number) => Promise<void>;
+  updateAICallResult: (callId: number, vapiCallId: string) => Promise<void>;
   updateStatus: (id: number, status: CallStatus) => Promise<void>;
   removeCall: (id: number) => Promise<void>;
 }
@@ -41,6 +42,36 @@ export const useCallStore = create<CallStore>((set, get) => ({
     set({loading: true});
     const calls = await db.getAllCalls();
     set({calls, loading: false});
+  },
+
+  syncInProgressCalls: async () => {
+    const allCalls = await db.getAllCalls();
+    const inProgress = allCalls.filter(
+      c => c.callType === CallType.AI_AGENT &&
+           c.status === CallStatus.IN_PROGRESS &&
+           c.vapiCallId,
+    );
+    for (const call of inProgress) {
+      try {
+        await refreshCallByVapi(call.vapiCallId!);
+        const result = await pollCallStatusByVapi(call.vapiCallId!);
+        const status = result.status as CallStatus;
+        if (status === CallStatus.COMPLETED || status === CallStatus.FAILED) {
+          await db.updateAICallResult(
+            call.id,
+            status,
+            result.transcript || null,
+            result.booking_confirmed ?? null,
+            result.ai_summary || null,
+            result.vapi_call_id || call.vapiCallId,
+          );
+        }
+      } catch {
+        // Skip this call, try next
+      }
+    }
+    const updated = await db.getAllCalls();
+    set({calls: updated});
   },
 
   addCall: async (phoneNumber, contactName, scheduledTime, status) => {
@@ -111,9 +142,15 @@ export const useCallStore = create<CallStore>((set, get) => ({
     return localId;
   },
 
-  updateAICallResult: async (callId: number) => {
+  updateAICallResult: async (callId: number, vapiCallId: string) => {
     try {
-      const result = await apiPollStatus(callId);
+      // First try to refresh from Vapi to ensure backend has latest data
+      try {
+        await refreshCallByVapi(vapiCallId);
+      } catch {
+        // Refresh failed (Vapi may not be ready yet) — continue with poll
+      }
+      const result = await pollCallStatusByVapi(vapiCallId);
       const status = result.status as CallStatus;
       if (
         status === CallStatus.COMPLETED ||
@@ -122,10 +159,10 @@ export const useCallStore = create<CallStore>((set, get) => ({
         await db.updateAICallResult(
           callId,
           status,
-          result.transcript,
-          result.booking_confirmed,
-          result.ai_summary,
-          result.vapi_call_id,
+          result.transcript || null,
+          result.booking_confirmed ?? null,
+          result.ai_summary || null,
+          result.vapi_call_id || vapiCallId,
         );
       }
     } catch {
