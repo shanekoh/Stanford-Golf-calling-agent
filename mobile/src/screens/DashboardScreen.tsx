@@ -35,11 +35,15 @@ export default function DashboardScreen({navigation}: Props) {
   }, [navigation, loadCalls]);
 
   const sections = useMemo(() => {
-    const upcoming = calls.filter(c => c.status === CallStatus.SCHEDULED);
-    const past = calls.filter(c => c.status !== CallStatus.SCHEDULED);
+    const active = calls.filter(
+      c => c.status === CallStatus.SCHEDULED || c.status === CallStatus.IN_PROGRESS,
+    );
+    const past = calls.filter(
+      c => c.status !== CallStatus.SCHEDULED && c.status !== CallStatus.IN_PROGRESS,
+    );
     const result = [];
-    if (upcoming.length > 0) {
-      result.push({title: 'Upcoming', data: upcoming});
+    if (active.length > 0) {
+      result.push({title: 'Active', data: active});
     }
     if (past.length > 0) {
       result.push({title: 'History', data: past});
@@ -158,7 +162,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   emptyTitle: {
-    color: '#1B5E20',
+    color: '#8C1515',
     marginBottom: 8,
     fontSize: 22,
     fontWeight: 'bold',
@@ -172,7 +176,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 16,
     bottom: 16,
-    backgroundColor: '#1B5E20',
+    backgroundColor: '#8C1515',
     borderRadius: 28,
     width: 56,
     height: 56,

@@ -79,10 +79,12 @@ mobile/ios/build/
 mobile/.bundle/
 
 # Python
-backend/__pycache__/
-backend/*.pyc
+__pycache__/
+*.pyc
 backend/.venv/
 backend/venv/
+backend/.env
+backend/calls.db
 
 # OS files
 .DS_Store

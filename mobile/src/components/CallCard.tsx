@@ -1,7 +1,7 @@
 import React from 'react';
 import {View, StyleSheet, TouchableOpacity} from 'react-native';
 import {Card, Text, IconButton} from 'react-native-paper';
-import {CallTask, CallStatus} from '../types';
+import {CallTask, CallStatus, CallType} from '../types';
 import StatusBadge from './StatusBadge';
 
 interface CallCardProps {
@@ -24,23 +24,37 @@ function formatDateTime(timestamp: number): string {
 
 export default function CallCard({call, onPress, onCancel, onDelete}: CallCardProps) {
   const isUpcoming = call.status === CallStatus.SCHEDULED;
+  const isAI = call.callType === CallType.AI_AGENT;
 
   return (
     <TouchableOpacity onPress={() => onPress(call)} activeOpacity={0.7}>
       <Card style={styles.card} mode="elevated">
         <Card.Content style={styles.content}>
           <View style={styles.leftSection}>
-            <Text variant="titleMedium" style={styles.name}>
-              {call.contactName || call.phoneNumber}
-            </Text>
+            <View style={styles.nameRow}>
+              <Text variant="titleMedium" style={styles.name}>
+                {call.contactName || call.phoneNumber}
+              </Text>
+              {isAI && (
+                <View style={styles.aiBadge}>
+                  <Text style={styles.aiBadgeText}>AI</Text>
+                </View>
+              )}
+            </View>
             {call.contactName && (
               <Text variant="bodySmall" style={styles.phone}>
                 {call.phoneNumber}
               </Text>
             )}
-            <Text variant="bodySmall" style={styles.time}>
-              {formatDateTime(call.scheduledTime)}
-            </Text>
+            {isAI && call.bookingDate ? (
+              <Text variant="bodySmall" style={styles.time}>
+                {call.bookingDate} at {call.bookingTime} - {call.numPlayers} player{(call.numPlayers || 0) !== 1 ? 's' : ''}
+              </Text>
+            ) : (
+              <Text variant="bodySmall" style={styles.time}>
+                {formatDateTime(call.scheduledTime)}
+              </Text>
+            )}
           </View>
           <View style={styles.rightSection}>
             <StatusBadge status={call.status} />
@@ -84,9 +98,25 @@ const styles = StyleSheet.create({
   rightSection: {
     alignItems: 'flex-end',
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   name: {
     fontWeight: '600',
-    color: '#1B5E20',
+    color: '#8C1515',
+  },
+  aiBadge: {
+    backgroundColor: '#E65100',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  aiBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
   },
   phone: {
     color: '#666',

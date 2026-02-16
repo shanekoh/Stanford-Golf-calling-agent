@@ -8,7 +8,8 @@ interface StatusBadgeProps {
 
 const STATUS_CONFIG: Record<CallStatus, {label: string; color: string; icon: string}> = {
   [CallStatus.SCHEDULED]: {label: 'Scheduled', color: '#1565C0', icon: 'clock-outline'},
-  [CallStatus.COMPLETED]: {label: 'Completed', color: '#2E7D32', icon: 'check-circle-outline'},
+  [CallStatus.IN_PROGRESS]: {label: 'In Progress', color: '#E65100', icon: 'phone-in-talk'},
+  [CallStatus.COMPLETED]: {label: 'Completed', color: '#007833', icon: 'check-circle-outline'},
   [CallStatus.FAILED]: {label: 'Failed', color: '#C62828', icon: 'alert-circle-outline'},
   [CallStatus.CANCELLED]: {label: 'Cancelled', color: '#757575', icon: 'close-circle-outline'},
 };

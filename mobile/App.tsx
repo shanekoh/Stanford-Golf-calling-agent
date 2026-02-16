@@ -16,7 +16,7 @@ const theme = {
   ...MD3LightTheme,
   colors: {
     ...MD3LightTheme.colors,
-    primary: '#1B5E20',
+    primary: '#8C1515',
     secondary: '#C62828',
     surface: '#FFFFFF',
     background: '#F5F5F5',
@@ -31,12 +31,12 @@ function App() {
   return (
     <SafeAreaProvider>
       <PaperProvider theme={theme}>
-        <StatusBar barStyle="light-content" backgroundColor="#1B5E20" />
+        <StatusBar barStyle="light-content" backgroundColor="#8C1515" />
         <NavigationContainer>
           <Stack.Navigator
             initialRouteName="Dashboard"
             screenOptions={{
-              headerStyle: {backgroundColor: '#1B5E20'},
+              headerStyle: {backgroundColor: '#8C1515'},
               headerTintColor: '#fff',
               headerTitleStyle: {fontWeight: 'bold'},
             }}>

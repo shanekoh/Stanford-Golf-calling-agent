@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#1B5E20',
+    backgroundColor: '#8C1515',
   },
   headerTitle: {
     color: '#fff',
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1B5E20',
+    backgroundColor: '#8C1515',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
